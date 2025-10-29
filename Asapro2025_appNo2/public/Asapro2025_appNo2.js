@@ -93,39 +93,6 @@ function setHeaderPeriod(text) {
         }
 }
 
-async function handleLikeClick(event) {
-        const button = event.currentTarget;
-        const commentId = button.dataset.commentId;
-
-        if (!commentId) return;
-
-        try {
-                const response = await fetch(`/api/comments/${commentId}/like`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" }
-                        // bodyは不要
-                });
-
-                if (response.ok) {
-                        const updatedData = await response.json(); // { id: 12345, likes: 5 }
-
-                        // 画面上のいいね数を更新
-                        const likeCountElement = document.getElementById(`like-count-${commentId}`);
-                        if (likeCountElement) {
-                                likeCountElement.textContent = updatedData.likes;
-                        }
-                } else {
-                        alert("いいねの送信に失敗しました。");
-                        console.error("サーバー応答エラー:", await response.text());
-                }
-        } catch (e) {
-                console.error("いいね処理中にエラーが発生しました:", e);
-                alert("ネットワークエラーによりいいねできませんでした。");
-        }
-}
-
-
-
 
 // ======= 現在時限表示 ヘルパー関数 (ヘッダー表示とデータ取得用IDを返す) =======
 
