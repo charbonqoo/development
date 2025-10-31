@@ -1,5 +1,145 @@
-// Asapro2025_appNo2.js
+// ==== Firebase imports ====
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
 
+// ==== あなたの設定 ====
+const firebaseConfig = {
+  apiKey: "AIzaSyDJhDQtSHKP1tPmGBYxcJaP0Q4Ic5B24o0",
+  authDomain: "loginfittest.firebaseapp.com",
+  projectId: "loginfittest",
+  storageBucket: "loginfittest.firebasestorage.app",
+  messagingSenderId: "349747039661",
+  appId: "1:349747039661:web:366ce894f181f3aec76524"
+};
+
+// ==== 単一初期化 ====
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// 現在のログイン状態を保持
+let isLoggedIn = false;
+
+// ==== 便利関数 ====
+const $ = (sel) => document.querySelector(sel);
+const showMsg = (el, text) => { if (el) el.textContent = text; };
+
+// ==== ページ判定（← path を先に定義！）====
+const path = location.pathname.replace(/\/+$/, "");
+const isIndex = /(?:^|\/)(index\.html)?$/.test(path);  // ルート/ もOK
+const isHome  = /(?:^|\/)home\.html$/.test(path);
+
+// ===== index.html 用（ログインページ）=====
+const googleBtn = $('#googleBtn');
+const googleMsg = $('#googleMsg');
+const continueBtn = $('#continueBtn');          // 置いていなければ null のままでOK
+const logoutBtnOnIndex = $('#logoutBtnOnIndex');// 同上
+
+// if (googleBtn) {
+//   const provider = new GoogleAuthProvider();
+//   googleBtn.addEventListener('click', async () => {
+//     try {
+//       await signInWithPopup(auth, provider);
+//       showMsg(googleMsg, 'Googleでログインしました。');      
+//       const p = new URLSearchParams(location.search);
+//       location.replace(p.get('next') || 'home.html');
+//     } catch (err) {
+//       showMsg(googleMsg, `Googleログイン失敗: ${err.code || err.message}`);
+//     }
+//   });
+// }
+
+if (googleBtn) {
+    const provider = new GoogleAuthProvider();
+    googleBtn.addEventListener('click', async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+  
+        const email = user.email;
+        const uid = user.uid;
+  
+        // 表示用
+        console.log('ログイン成功:', { email, uid });
+        showMsg(googleMsg, `Googleでログインしました。\nメール: ${email}\nUID: ${uid}`);
+  
+        // 保存して別ページで確認もできる
+        localStorage.setItem('userEmail', email);
+        localStorage.setItem('userUid', uid);
+  
+        const p = new URLSearchParams(location.search);
+        location.replace(p.get('next') || 'home.html');
+      } catch (err) {
+        console.error(err);
+        showMsg(googleMsg, `Googleログイン失敗: ${err.code || err.message}`);
+      }
+    });
+  }
+  
+
+if (continueBtn) {
+  continueBtn.addEventListener('click', () => location.replace('home.html'));
+}
+
+if (logoutBtnOnIndex) {
+  logoutBtnOnIndex.addEventListener('click', async () => {
+    await signOut(auth);
+    location.reload();
+  });
+}
+
+// ===== home.html 用（任意でログアウトボタン対応）=====
+const emailOut = $('#userEmail');
+const uidOut   = $('#userUid');
+
+const logoutBtn = $('#logoutBtn');
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', async () => {
+    //await signOut(auth);
+    location.replace('index.html');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userUid');
+    location.replace('index.html');
+  });
+}
+
+// --- ここがポイント：自動遷移の条件を絞る
+onAuthStateChanged(auth, (user) => {
+
+    if (user) {
+        console.log(`ログイン中: ${user.email}`);
+        isLoggedIn = true;
+        if(googleMsg){
+            googleMsg.textContent = `${user.displayName || user.email} でログイン中`;
+        }
+      } else {
+        console.log("未ログイン");
+        googleMsg.textContent = "ログアウト中";
+        isLoggedIn = false;
+    }
+   
+    //変更10/24
+    if (isHome) {
+        if (user) {
+          const email = user.email || localStorage.getItem('userEmail') || '';
+          const uid   = user.uid   || localStorage.getItem('userUid')   || '';
+          if (emailOut) emailOut.textContent = `メールアドレス: ${email}`;
+          if (uidOut)   uidOut.textContent   = `UID: ${uid}`;
+        } else {
+          // 未ログインなら index に戻す（next 付きで）
+          //location.replace('index.html?next=home.html');
+          //今回は非ログイン者でもみれるようにするので上のコードはコメントアウト
+        }
+    }
+    //変更10/24ここまで
+
+
+});
 // 1. グローバル定数とヘルパー関数の定義 (DOMContentLoadedの外側)
 
 const PERIOD_TIMES = [
